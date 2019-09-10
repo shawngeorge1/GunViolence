@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+    <head>
+
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <script src="https://d3js.org/topojson.v2.min.js"></script>
+    <script src="gun-violence.js"></script>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <script
+    src="https://code.jquery.com/jquery-3.3.1.js"
+    integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60="
+    crossorigin="anonymous"></script>
+    <style>
+        .states :hover {
+        fill: red;
+        }
+        .state-borders {
+            fill: none;
+            stroke: #fff;
+            stroke-width: 0.5px;
+            stroke-linejoin: round;
+            stroke-linecap: round;
+            pointer-events: none;
+        }
+    </style>
+    </head>
+
+    <body>
+        <svg class="container-fluid" style="width:950;height:500;" id="usaheatmap"></svg>
+        <div class="container-fluid">
+            <button type="button" class="btn btn-primary" id="play">
+                <i id="play-btn" class='fa fa-play-circle'></i>
+            </button>
+            <button type="button" class="btn btn-primary" id="pause">
+                    <i id="pause-btn" class='fa fa-pause-circle'></i>
+            </button>
+
+
+        </div>
+    </body>
+
+
+    <script  type="text/javascript">
+        var currentFrame = -1;
+        var maxFrame = 4;
+        function setFrame() {
+            var paths = svg.selectAll("path")[0];
+            for(var i = 0; i < paths.length; i++){
+                if(stateMap.get(paths[i].__data__.properties.name)) {
+                    paths[i].style.fill = pickColor(stateMap.get(paths[i].__data__.properties.name)[currentFrame]);
+                }
+            }
+        }
+
+
+        function pickColor(zValue) {
+            switch(Math.floor(zValue)) {
+                case -3:
+                        return '#FEE5D9';
+                    break;
+                case -2:
+                        return '#FCBBA1';
+                    break;
+                case -1:
+                        return '#FC9272';
+                    break;
+                case 0:
+                        return '#FB6A4A';
+                    break;
+                case 1:
+                        return '#EF3B2C';
+                    break;
+                case 2:
+                        return '#CB181D';
+                    break;
+                case 3:
+                        return '#99000D';
+                    break;
+            }
+        }
+
+        var width = 960;
+        var height = 500;
+
+        var projection = d3.geo.albersUsa()
+                   .translate([width/2, height/2])    // translate to center of screen
+                   .scale([1000]);
+
+        var svg = d3.select("svg")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height)
+
+        var path = d3.geo.path()               // path generator that will convert GeoJSON to SVG paths
+             .projection(projection);
+
+        d3.json("https://bypasscors.herokuapp.com/api/?url="+encodeURIComponent("https://svapnil.com/usavis/us-states.json"), function(json) {
+            svg.selectAll("path")
+                .data(json.features)
+                .enter()
+                .append("path")
+                .attr("d", path)
+                .style("stroke", "#fff")
+                .style("stroke-width", "1")
+                .style("fill", function(d) {
+                    // Get data value
+                    var value = -3;
+
+                    if (value) {
+                    //If value exists…
+                    return pickColor(value);
+                    } else {
+                    //If value is undefined…
+                    return "rgb(213,222,217)";
+                    }
+                });
+        });
+
+        var stateMap;
+        var paused;
+        stateMap = new Map(states.states)
+        $("#play").click(function(){
+            document.getElementById('play').className = 'btn btn-secondary';
+            paused = false;
+            interval = setInterval(function() {
+                if (!paused){
+                    if(currentFrame >= maxFrame ) {
+                        clearInterval(interval);
+                        document.getElementById('play').className = 'btn btn-primary';
+                        currentFrame = -1;
+                        paused = true;
+                    } else {
+                        currentFrame = (currentFrame+1);
+                        setFrame();
+                    }
+                }
+            }, 1000);  
+        });
+
+        $("#pause").click(function(){
+            document.getElementById('pause').className = 'btn btn-secondary';
+            paused = true;
+        });
+
+        
+    </script>
